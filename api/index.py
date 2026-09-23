@@ -3,17 +3,17 @@ import math
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+CORS_HEADERS = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "*",
+}
 
 DATA = json.loads((Path(__file__).parent / "telemetry.json").read_text())
 
@@ -24,7 +24,6 @@ class Query(BaseModel):
 
 
 def percentile(values, p):
-    # linear interpolation (same as numpy default)
     s = sorted(values)
     k = (len(s) - 1) * p / 100
     lo, hi = math.floor(k), math.ceil(k)
@@ -48,8 +47,14 @@ def compute(q: Query):
     return out
 
 
+@app.options("/")
+@app.options("/api")
+def preflight():
+    return Response(status_code=204, headers=CORS_HEADERS)
+
+
 @app.post("/")
 @app.post("/api")
 def analyze(q: Query):
     res = compute(q)
-    return {"regions": res, **res}
+    return JSONResponse(content={"regions": res, **res}, headers=CORS_HEADERS)
