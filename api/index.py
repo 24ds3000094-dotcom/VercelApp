@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from fastapi import FastAPI, Response
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -43,11 +44,25 @@ def compute(q: Query):
 @app.options("/")
 @app.options("/api")
 def options_handler():
-    return Response(status_code=200)
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
 
 
 @app.post("/")
 @app.post("/api")
 def analyze(q: Query):
     res = compute(q)
-    return {"regions": res, **res}
+    return JSONResponse(
+        content={"regions": res, **res},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
