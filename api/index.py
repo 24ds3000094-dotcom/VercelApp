@@ -3,7 +3,7 @@ import math
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -38,6 +38,12 @@ def compute(q: Query):
             "breaches": sum(1 for x in lat if x > q.threshold_ms),
         }
     return out
+
+
+@app.options("/")
+@app.options("/api")
+def options_handler():
+    return Response(status_code=200)
 
 
 @app.post("/")
