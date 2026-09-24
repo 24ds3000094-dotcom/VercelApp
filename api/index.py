@@ -59,10 +59,10 @@ def options_handler():
 def analyze(q: Query):
     res = compute(q)
     return JSONResponse(
-        content={"regions": res, **res},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        },
-    )
+    content=res,
+    headers={
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+    },
+)
