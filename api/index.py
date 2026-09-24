@@ -3,16 +3,17 @@ import math
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
 
-# This is the proper way – Vercel + FastAPI respects it
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -53,5 +54,24 @@ def compute(q: Query):
 @app.post("/api")
 def analyze(q: Query):
     res = compute(q)
-    # Return exactly the structure the evaluator expects
-    return {"regions": res, **res}
+    return JSONResponse(
+        content={"regions": res, **res},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
+
+@app.options("/")
+@app.options("/api")
+def options_handler():
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
