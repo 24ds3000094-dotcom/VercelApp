@@ -1,29 +1,25 @@
-import json
-import math
+import json, math
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 app = FastAPI()
 
-@app.middleware("http")
-async def add_cors(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATA = json.loads((Path(__file__).parent / "telemetry.json").read_text())
-
 
 class Query(BaseModel):
     regions: List[str]
     threshold_ms: float
-
 
 def percentile(values, p):
     s = sorted(values)
@@ -31,8 +27,9 @@ def percentile(values, p):
     lo, hi = math.floor(k), math.ceil(k)
     return s[lo] + (s[hi] - s[lo]) * (k - lo)
 
-
-def compute(q: Query):
+@app.post("/")
+@app.post("/api")
+def analyze(q: Query):
     out = {}
     for r in q.regions:
         rows = [d for d in DATA if d["region"] == r]
@@ -47,30 +44,3 @@ def compute(q: Query):
             "breaches": sum(1 for x in lat if x > q.threshold_ms),
         }
     return out
-
-
-@app.options("/")
-@app.options("/api")
-def options_handler():
-    return Response(
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        },
-    )
-
-
-@app.post("/")
-@app.post("/api")
-def analyze(q: Query):
-    res = compute(q)
-    return JSONResponse(
-        content=res,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        },
-    )
