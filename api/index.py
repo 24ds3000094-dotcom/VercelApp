@@ -3,11 +3,19 @@ import math
 from pathlib import Path
 from typing import List
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 app = FastAPI()
+
+@app.middleware("http")
+async def add_cors(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
 
 DATA = json.loads((Path(__file__).parent / "telemetry.json").read_text())
 
@@ -59,10 +67,10 @@ def options_handler():
 def analyze(q: Query):
     res = compute(q)
     return JSONResponse(
-    content=res,
-    headers={
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*",
-    },
-)
+        content=res,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
